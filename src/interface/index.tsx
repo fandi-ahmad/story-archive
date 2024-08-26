@@ -3,6 +3,14 @@ export interface DayType {
   note: string
 }
 
+export interface DayDataRenderType {
+  date: string
+  month: string
+  year: string
+  image: string
+  note: string
+}
+
 export interface MonthType {
   d01: DayType
   d02: DayType
