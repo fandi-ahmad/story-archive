@@ -1,4 +1,5 @@
 import React from 'react';
+import Loader from './components/Loader';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ const Layout: React.FC<LayoutProps> = ({children}) => {
           </div>
         </div>
       </div>
+      <Loader/>
     </div>
   )
 }
