@@ -3,19 +3,22 @@ import SingleDate from "../components/SingleDate"
 import Header from "../components/Header";
 import Navbar from "../components/calendar/Navbar";
 import { generateDateByMonth, getEmptySpaces, mergeCalendarData, generateMonthName } from "../function/calendar";
-import { ReadDayApi, WriteDayApi } from "../function/calendarData";
+import { DeleteDayApi, ReadDayApi, WriteDayApi } from "../function/calendarData";
 import HeaderNavbar from "../components/calendar/HeaderNavbar";
-import { getStorage, ref, uploadBytes } from "firebase/storage";
-import Modal from "../components/Modal";
+import { deleteObject, getStorage, ref, uploadBytes } from "firebase/storage";
+import Modal from "../components/modal/Modal";
 import TextInput from "../components/input/TextInput";
 import TextareaInput from "../components/input/TextareaInput";
 import BaseButton from "../components/BaseButton";
 import { DayDataRenderType } from "../interface";
+import ImagePreviewModal from "../components/modal/ImagePreviewModal";
+import { useGlobalState } from "../hook/useGlobalState";
 
 const Home = () => {
   const [dates, setDates] = useState<any | any[]>()
   const [emptySpaces, setEmptySpaces] = useState<any | any[]>()
   const [selectedMonth, setSelectedMonth] = useState<number>(8)
+  const [_, setIsOpenLoader] = useGlobalState('isOpenLoader')
 
   const generateCalendarMonth = (year: number, month: number) => {
     // Buat key bulan yang secara eksplisit bertipe 'm1' | 'm2' | 'm3' | ... | 'm12'
@@ -72,10 +75,17 @@ const Home = () => {
   const uploadFile = (year: string, month: string, dateFileName: string) => {
     const storage = getStorage();
     const storageRef = ref(storage, `${year}-${month}/${dateFileName}`);
+    // uploading file process
+    setIsOpenLoader(true)
 
     // 'fileBlob' comes from the Blob or File API
     if (fileBlob) {
-      uploadBytes(storageRef, fileBlob)
+      uploadBytes(storageRef, fileBlob).then(() => {
+        // success uploaded
+        setIsOpenLoader(false)
+        setIsOpenModal(false)
+        getDataCalendar()
+      });
     }
   }
 
@@ -122,6 +132,22 @@ const Home = () => {
     uploadFile(writeYear, writeMonth, writeDate)
   }
 
+  const deleteImage = async (year: string, month: string, date: string) => {
+    const storage = getStorage();
+    const desertRef = ref(storage, `${year}-${month}/${date}`);
+    deleteObject(desertRef)
+  }
+
+  const deleteData = async () => {
+    DeleteDayApi(writeYear, writeMonth, writeDate)
+    deleteImage(writeYear, writeMonth, writeDate)
+        
+    setIsOpenModal(false)
+    setTimeout(() => {
+      window.location.reload()
+    }, 500)
+  }
+
   return (
     <div className="text-xs">
       <p className="text-white text-center text-2xl mb-4">The Last Day</p>
@@ -156,7 +182,7 @@ const Home = () => {
       </div>
 
       <Modal isOpen={isOpenModal} onClose={() => setIsOpenModal(false)}>
-        { fileUrl && <img src={fileUrl} alt="" className="h-80 mx-auto mb-4" /> }
+        { fileUrl && <ImagePreviewModal src={fileUrl} onClick={deleteData} /> }
         <TextInput label="Upload gambar" type="file" onChange={handleFileChange} />
         <TextareaInput label="Keterangan" value={textNote} onChange={(e) => setTextNote(e.target.value)} />
         <div className="flex justify-end">
